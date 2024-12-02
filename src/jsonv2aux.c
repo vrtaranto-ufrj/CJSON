@@ -53,10 +53,16 @@ void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
     
     strcpy(key_value_pair->key, key);
     key_value_pair->value = value;
-    key_value_pair->next = json_obj->first;
-    key_value_pair->previous = NULL;
+    key_value_pair->next = NULL;
+    key_value_pair->previous = json_obj->last;
 
-    json_obj->first = key_value_pair;
+    if (json_obj->last == NULL) {
+        json_obj->first = key_value_pair;
+        json_obj->last = key_value_pair;
+    } else {
+        json_obj->last->next = key_value_pair;
+        json_obj->last = key_value_pair;
+    }
 }
 
 void setNull(JsonValue *json) {

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <regex.h>
 
 
 typedef struct JsonKeyValuePairStruct JsonKeyValuePair;
@@ -19,6 +20,7 @@ typedef JsonValue Json;
 Json * createJson(JsonTypes type, void * value);
 JsonObject * createJsonObject();
 JsonArray * createJsonArray(size_t array_size);
+void changeJsonArraySize(JsonArray *json_array, size_t array_size);
 
 void setJsonValueType(Json *json, JsonTypes type, void * value);
 
@@ -33,7 +35,8 @@ char * getString(JsonObject *json_obj, const char *key);
 JsonObject * getObject(JsonObject *json_obj, const char *key);
 JsonArray * getArray(JsonObject *json_obj, const char *key);
 
-char * jsonfy(Json *json);
+char * jsonStringify(Json *json);
+
 
 enum JsonTypesEnum {
     JSON_NULL,

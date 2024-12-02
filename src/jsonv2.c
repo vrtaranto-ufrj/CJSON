@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <regex.h>
 
 #include "jsonv2.h"
 #include "jsonv2aux.h"
@@ -56,6 +57,17 @@ JsonArray * createJsonArray(size_t array_size) {
     new_json_array->array_size = array_size;
 
     return new_json_array;
+}
+
+void changeJsonArraySize(JsonArray *json_array, size_t array_size) {
+    json_array->array = (JsonValue **) realloc(json_array->array, sizeof(JsonValue) * array_size);
+    if (json_array->array == NULL) {
+        perror("realloc");
+        fprintf(stderr, "Failed to realloc JsonArray\n");
+        return;
+    }
+
+    json_array->array_size = array_size;
 }
 
 void setJsonValueType(Json *json, JsonTypes type, void * value) {
@@ -169,7 +181,7 @@ JsonArray * getArray(JsonObject *json_obj, const char *key) {
     return json_value->value->value.array_ptr;
 }
 
-char * jsonfy(Json *json) {
+char * jsonStringify(Json *json) {
     size_t string_len = 1;
 
     char *json_string = (char *) calloc(string_len, sizeof(char));

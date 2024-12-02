@@ -2,6 +2,7 @@
 
 #include "jsonv2.h"
 #include "jsonv2aux.h"
+#include "jsonparser.h"
 
 
 int main(void) {
@@ -20,12 +21,21 @@ int main(void) {
 
     const char *i = getString(json->value.object_ptr, "oi");
 
-    char *json_string = jsonfy(json);
+    char *json_string = jsonStringify(json);
+
+    printf("%s\n", json_string);
+    
+    Json *teste = jsonParse(json_string);
+
+    free(json_string);
+
+    json_string = jsonStringify(teste);
 
     printf("%s\n", json_string);
 
     free(json_string);
     freeJson(json);
+    freeJson(teste);
 
     return 0;
 }
