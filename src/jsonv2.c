@@ -391,15 +391,21 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
 
     strcat(json_string, "[");
 
+    size_t num_valid_elements = 0;
+    for (size_t i = 0; i < json->value.array_ptr->array_size; i++) {
+        if (json->value.array_ptr->array[i] != NULL) num_valid_elements++;
+    }
+
     for (size_t i = 0; i < json->value.array_ptr->array_size; i++) {
         if (json->value.array_ptr->array[i] == NULL) continue;
+        num_valid_elements--;
 
         json_string = jsonfyRecursive(json->value.array_ptr->array[i], json_string, string_len);
         if (json_string == NULL) {
             return NULL;
         }
 
-        if (i != json->value.array_ptr->array_size - 1) {
+        if (num_valid_elements) {
             *string_len += 1;
 
             new_json_string = (char *) realloc(json_string, *string_len);
