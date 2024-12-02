@@ -132,6 +132,10 @@ Json *jsonParse(char *json_string) {
     Json *json = parseJson(&temp_input);
     free(string);
 
+    if (json == NULL) {
+        fprintf(stderr, "Unable to parse json. Not a valid format!\n");
+    }
+
     return json;
 }
 
