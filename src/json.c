@@ -227,6 +227,7 @@ char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len) {
         fprintf(stderr, "Invalid JsonType\n");
         break;
     }
+    return NULL;
 }
 
 char * jsonfyNull(Json *json, char *json_string, size_t *string_len) {
@@ -810,7 +811,6 @@ Json * parseArray(char **input) {
     JsonArray *array = createJsonArray(16);
     Json *json_array = createJson(JSON_ARRAY, array);
     Json *json_value;
-    char *key;
     size_t index = 0;
 
     while (1) {
