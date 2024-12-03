@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "json.h"
+
+#define NUM_BASE 10
 
 char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len);
 char * jsonfyNull(Json *json, char *json_string, size_t *string_len);
@@ -13,19 +16,24 @@ char * jsonfyString(Json *json, char *json_string, size_t *string_len);
 char * jsonfyObject(Json *json, char *json_string, size_t *string_len);
 char * jsonfyArray(Json *json, char *json_string, size_t *string_len);
 
-void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
+int addKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
 
 JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key);  
 
 
-
 Json * createJson(JsonTypes type, void * value) {
-    Json * new_json = (Json *) calloc(1, sizeof(Json));
-    if (new_json == NULL) {
-        perror("calloc");
-        fprintf(stderr, "Failed to create Json\n");
+    if (value == NULL) {
+        errno = JSON_ERR_NULL;
         return NULL;
     }
+        
+
+    Json * new_json = (Json *) calloc(1, sizeof(Json));
+    if (new_json == NULL) {
+        errno = JSON_ERR_ALLOC;
+        return NULL;
+    }
+
     setJsonValueType(new_json, type, value);
 
     return new_json;
@@ -34,8 +42,7 @@ Json * createJson(JsonTypes type, void * value) {
 JsonObject * createJsonObject() {
     JsonObject * new_json_obj = (JsonObject *) calloc(1, sizeof(JsonObject));
     if (new_json_obj == NULL) {
-        perror("calloc");
-        fprintf(stderr, "Failed to create JsonObject\n");
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -45,15 +52,13 @@ JsonObject * createJsonObject() {
 JsonArray * createJsonArray(size_t array_size) {
     JsonArray * new_json_array = (JsonArray *) malloc(sizeof(JsonArray));
     if (new_json_array == NULL) {
-        perror("malloc");
-        fprintf(stderr, "Failed to create JsonArray\n");
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
-    new_json_array->array = (JsonValue **) calloc(array_size, sizeof(JsonValue));
+    new_json_array->array = (JsonValue **) calloc(array_size, sizeof(JsonValue*));
     if (new_json_array->array == NULL) {
-        perror("calloc");
-        fprintf(stderr, "Failed to create JsonValues from JsonArray\n");
+        errno = JSON_ERR_ALLOC;
         return NULL;
     } 
 
@@ -73,7 +78,7 @@ void changeJsonArraySize(JsonArray *json_array, size_t array_size) {
     json_array->array_size = array_size;
 }
 
-void setJsonValueType(Json *json, JsonTypes type, void * value) {
+int setJsonValueType(Json *json, JsonTypes type, void * value) {
     switch (type) {
     case JSON_NULL:
         setNull(json);
@@ -88,7 +93,7 @@ void setJsonValueType(Json *json, JsonTypes type, void * value) {
         setBool(json, *(bool*) value);
         break;
     case JSON_STRING:
-        setString(json, (char*) value);
+        if (setString(json, (char*) value) == -1) return -1;
         break;
     case JSON_OBJECT:
         setObject(json, (JsonObject*) value);
@@ -97,9 +102,11 @@ void setJsonValueType(Json *json, JsonTypes type, void * value) {
         setArray(json, (JsonArray*) value);
         break;
     default:
-        fprintf(stderr, "Invalid JsonType\n");
-        break;
+        errno = JSON_ERR_INV_TYPE;
+        return -1;
     }
+
+    return 0;
 }
 
 void freeJson(Json *json) {
@@ -148,38 +155,69 @@ void freeJsonArray(JsonArray *json_array) {
 }
 
 int64_t * getInt(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_INT) return NULL;
     return &(json_value->value->value.val_int);
 }
 
 double * getDouble(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_DOUBLE) return NULL;
     return &(json_value->value->value.val_double);
 }
 
 bool * getBool(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_BOOL) return NULL;
     return &(json_value->value->value.val_bool);
 }
 
 char * getString(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_STRING) return NULL;
     return json_value->value->value.val_string;
 }
 
 JsonObject * getObject(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_OBJECT) return NULL;
     return json_value->value->value.object_ptr;
 }
 
 JsonArray * getArray(JsonObject *json_obj, const char *key) {
+    if (json_obj == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     JsonKeyValuePair *json_value = findKeyValuePair(json_obj, key);
     if (json_value == NULL || json_value->value->type != JSON_ARRAY) return NULL;
+
     return json_value->value->value.array_ptr;
 }
 
@@ -194,16 +232,19 @@ Json * getArrayValue(JsonArray *json_array, size_t index) {
 
 
 char * jsonStringify(Json *json) {
+    if (json == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
+
     size_t string_len = 1;
 
     char *json_string = (char *) calloc(string_len, sizeof(char));
     if (json_string == NULL) {
-        perror("malloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
-    
     return jsonfyRecursive(json, json_string, &string_len);
 }
 
@@ -224,9 +265,9 @@ char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len) {
     case JSON_ARRAY:
         return jsonfyArray(json, json_string, string_len);
     default:
-        fprintf(stderr, "Invalid JsonType\n");
-        break;
+        errno = JSON_ERR_INV_TYPE;
     }
+
     return NULL;
 }
 
@@ -237,8 +278,8 @@ char * jsonfyNull(Json *json, char *json_string, size_t *string_len) {
     
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -254,9 +295,8 @@ char * jsonfyInt(Json *json, char *json_string, size_t *string_len) {
     int num_len = snprintf(num, sizeof(num), "%" PRId64, json->value.val_int);
 
     if (num_len < 0) {
-        perror("snprintf");
-        fprintf(stderr, "Erro ao formatar número\n");
         free(json_string);
+        errno = JSON_ERR_INV_NUM;
         return NULL;
     }
     
@@ -264,8 +304,8 @@ char * jsonfyInt(Json *json, char *json_string, size_t *string_len) {
 
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -281,8 +321,8 @@ char * jsonfyDouble(Json *json, char *json_string, size_t *string_len) {
     int num_len = snprintf(num, sizeof(num), "%f", json->value.val_double);
 
     if (num_len < 0) {
-        perror("snprintf");
-        fprintf(stderr, "Erro ao formatar número\n");
+        free(json_string);
+        errno = JSON_ERR_INV_NUM;
         return NULL;
     }
     
@@ -290,8 +330,8 @@ char * jsonfyDouble(Json *json, char *json_string, size_t *string_len) {
 
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -310,8 +350,8 @@ char * jsonfyBool(Json *json, char *json_string, size_t *string_len) {
     
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        errno = JSON_ERR_ALLOC;
+        free(json_string);
         return NULL;
     }
 
@@ -329,8 +369,8 @@ char * jsonfyString(Json *json, char *json_string, size_t *string_len) {
     
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -348,8 +388,8 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
     
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
+        free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -361,11 +401,11 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
         size_t key_len = strlen(key_value_pair->key);
 
         *string_len += key_len + 3;
-        new_json_string = (char *) realloc(json_string, *string_len);
 
+        new_json_string = (char *) realloc(json_string, *string_len);
         if (new_json_string == NULL) {
-            perror("realloc");
-            fprintf(stderr, "Erro allocating Json string\n");
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
             return NULL;
         }
 
@@ -385,8 +425,8 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
 
             new_json_string = (char *) realloc(json_string, *string_len);
             if (new_json_string == NULL) {
-                perror("realloc");
-                fprintf(stderr, "Erro allocating Json string\n");
+                free(json_string);
+                errno = JSON_ERR_ALLOC;
                 return NULL;
             }
 
@@ -406,9 +446,8 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
 
     char *new_json_string = (char *) realloc(json_string, *string_len);
     if (new_json_string == NULL) {
-        perror("realloc");
-        fprintf(stderr, "Erro allocating Json string\n");
         free(json_string);
+        errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
@@ -435,9 +474,8 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
 
             new_json_string = (char *) realloc(json_string, *string_len);
             if (new_json_string == NULL) {
-                perror("realloc");
-                fprintf(stderr, "Erro allocating Json string\n");
                 free(json_string);
+                errno = JSON_ERR_ALLOC;
                 return NULL;
             }
 
@@ -453,7 +491,7 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
 }
 
 JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key) {    
-    for (JsonKeyValuePair *key_value_pair = json_obj->first; key_value_pair != NULL && key_value_pair; key_value_pair = key_value_pair->next) {
+    for (JsonKeyValuePair *key_value_pair = json_obj->first; key_value_pair != NULL; key_value_pair = key_value_pair->next) {
         if (strcmp(key_value_pair->key, key) == 0) {
             return key_value_pair;
         }
@@ -462,45 +500,56 @@ JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key) {
     return NULL;
 }
 
-void setKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
+int setKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
+    if (value == NULL) {
+        errno = JSON_ERR_NULL;
+        return -1;
+    }
+
+
     JsonKeyValuePair *old_json_key_value_pair = findKeyValuePair(json_obj, key);
     if (old_json_key_value_pair == NULL) {
         addKeyValuePair(json_obj, key, value);
-        return;
+        return 0;
     }
 
-    // freeValue()  TEM QUE IMPLEMENTAR ISSO AQUI
-    free(old_json_key_value_pair->value);
+    freeJson(value);
 
     old_json_key_value_pair->value = value;
+
+    return 0;
 }
 
-void setArrayValue(JsonArray *json_array, size_t index, Json *value) {
+int setArrayValue(JsonArray *json_array, size_t index, Json *value) {
+    if (json_array == NULL) {
+        errno = JSON_ERR_NULL;
+        return -1;
+    }
     if (index >= json_array->array_size ) {
-        fprintf(stderr, "Element, not inserted! Out of bounds");
-        return;
+        errno = JSON_ERR_OUT_BONDS;
+        return -1;
     }
 
     json_array->array[index] = value;
+
+    return 0;
 }
 
-void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
+int addKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
     JsonKeyValuePair * key_value_pair = (JsonKeyValuePair *) malloc(sizeof(JsonKeyValuePair));
     if (key_value_pair == NULL) {
-        perror("malloc");
-        fprintf(stderr, "Failed to create JsonKeyValuePair\n");
-        return;
+        errno = JSON_ERR_ALLOC;
+        return -1;
     }
 
     size_t key_size = strlen(key) + 1;
     key_value_pair->key = (char *) malloc(sizeof(char) * key_size);
     if (key_value_pair->key == NULL) {
-        perror("malloc");
-        fprintf(stderr, "Failed to aloc key string\n");
-        return;
+        errno = JSON_ERR_ALLOC;
+        return -1;
     }
     
-    strcpy(key_value_pair->key, key);
+    strncpy(key_value_pair->key, key, key_size);
     key_value_pair->value = value;
     key_value_pair->next = NULL;
     key_value_pair->previous = json_obj->last;
@@ -512,49 +561,57 @@ void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
         json_obj->last->next = key_value_pair;
         json_obj->last = key_value_pair;
     }
+
+    return 0;
 }
 
-void setNull(Json *json) {
+int setNull(Json *json) {
     memset(json, 0, sizeof(JsonValue));
+    return 0;
 }
 
-void setInt(Json *json, int64_t val_int) {
+int setInt(Json *json, int64_t val_int) {
     json->type = JSON_INT;
     json->value.val_int = val_int;
+    return 0;
 }
 
-void setDouble(Json *json, double val_double) {
+int setDouble(Json *json, double val_double) {
     json->type = JSON_DOUBLE;
     json->value.val_double = val_double;
+    return 0;
 }
 
-void setBool(Json *json, bool val_bool) {
+int setBool(Json *json, bool val_bool) {
     json->type = JSON_BOOL;
     json->value.val_bool = val_bool;
+    return 0;
 }
 
-void setString(Json *json, char * val_string) {
-    size_t string_len = strlen(val_string) + 1;
+int setString(Json *json, char * val_string) {
+    size_t string_size = strlen(val_string) + 1;
 
-    json->value.val_string = (char *) malloc(string_len);
+    json->value.val_string = (char *) malloc(string_size);
     if (json->value.val_string == NULL) {
-        perror("malloc");
-        fprintf(stderr, "Error setting string\n");
-        return;
+        errno = JSON_ERR_ALLOC;
+        return -1;
     }
 
-    strcpy(json->value.val_string, val_string);
+    strncpy(json->value.val_string, val_string, string_size);
     json->type = JSON_STRING;
+    return 0;
 }
 
-void setObject(Json *json, JsonObject *obj_ptr) {
+int setObject(Json *json, JsonObject *obj_ptr) {
     json->type = JSON_OBJECT;
     json->value.object_ptr = obj_ptr;
+    return 0;
 }
 
-void setArray(Json *json, JsonArray *array_ptr) {
+int setArray(Json *json, JsonArray *array_ptr) {
     json->type = JSON_ARRAY;
     json->value.array_ptr = array_ptr;
+    return 0;
 }
 
 // Json Parser
@@ -578,6 +635,10 @@ Token *nextToken(char **input) {
     if (c == '\0') return NULL;
 
     Token *token = malloc(sizeof(Token));
+    if (token == NULL) {
+        errno = JSON_ERR_ALLOC;
+        return NULL;
+    }
 
     if (c == '{') {
         token->type = TOKEN_LEFT_BRACE;
@@ -623,12 +684,18 @@ Token *nextToken(char **input) {
             size_t length = *input - start;
             token->type = TOKEN_STRING;
             token->value = malloc(length + 1);
+            if (token->value == NULL) {
+                free(token);
+                errno = JSON_ERR_ALLOC;
+                return NULL;
+            }
             strncpy(token->value, start, length);
             token->value[length] = '\0';
             (*input)++;
         } else {
-            token->type = TOKEN_ERROR;
-            token->value = NULL;
+            free(token);
+            errno = JSON_ERR_INV_JSON_STR;
+            return NULL;
         }
     } else if (isdigit(c) || c == '-') {
         const char *start = *input;
@@ -641,13 +708,18 @@ Token *nextToken(char **input) {
         }
         size_t length = *input - start;
         token->value = malloc(length + 1);
+        if (token == NULL) {
+            free(token);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
         strncpy(token->value, start, length);
         token->value[length] = '\0';
         token->type = isDouble ? TOKEN_DOUBLE : TOKEN_INT;
     } else {
-        token->type = TOKEN_ERROR;
-        token->value = NULL;
-        (*input)++;
+        free(token->value);
+        errno = JSON_ERR_INV_JSON_STR;
+        return NULL;
     }
 
     return token;
@@ -682,8 +754,8 @@ Json *parseJson(char **input) {
         json = parseArray(input);
         break;
     default:
-        fprintf(stderr, "Unknown TOKEN\n");
-        return NULL;
+        errno = JSON_ERR_INV_TYPE;
+        json = NULL;
     }
 
     free(token);
@@ -691,20 +763,24 @@ Json *parseJson(char **input) {
 }
 
 Json *jsonParse(char *json_string) {
+    if (json_string == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
     char *string;
     size_t json_len = strlen(json_string);
 
     string = (char *) malloc(json_len + 1);
+    if (string == NULL) {
+        errno = JSON_ERR_ALLOC;
+        return NULL;
+    }
 
     strncpy(string, json_string, json_len);
 
     char *temp_input = string;
     Json *json = parseJson(&temp_input);
     free(string);
-
-    if (json == NULL) {
-        fprintf(stderr, "Unable to parse json. Not a valid format!\n");
-    }
 
     return json;
 }
@@ -714,14 +790,24 @@ Json * parseNull(Token *token) {
 }
 
 Json * parseInt(Token *token) {
-    int64_t val_int = strtoll(token->value, NULL, 10);
+    char *endptr;
+    int64_t val_int = strtoll(token->value, &endptr, NUM_BASE);
     free(token->value);
+    if (endptr != NULL) {
+        errno = JSON_ERR_INV_NUM;
+        return NULL;
+    }
     return createJson(JSON_INT, &val_int);
 }
 
 Json * parseDouble(Token *token) {
-    double val_double = strtof(token->value, NULL);
+    char *endptr;
+    double val_double = strtod(token->value, &endptr);
     free(token->value);
+    if (endptr != NULL) {
+        errno = JSON_ERR_INV_NUM;
+        return NULL;
+    }
     return createJson(JSON_DOUBLE, &val_double);
 }
 
@@ -753,11 +839,13 @@ Json * parseObject(char **input) {
 
         free(token);
         token = nextToken(input);
+        if (token == NULL) return NULL;
 
         if (token->type != TOKEN_COLON) return NULL;
 
         free(token);
         token = nextToken(input);
+        if (token == NULL) return NULL;
 
         switch (token->type) {
         case TOKEN_NULL:
@@ -783,7 +871,7 @@ Json * parseObject(char **input) {
             json_value = parseArray(input);
             break;
         default:
-            fprintf(stderr, "Unknown TOKEN\n");
+            errno = JSON_ERR_INV_TYPE;
             return NULL;
         }
 
@@ -792,6 +880,7 @@ Json * parseObject(char **input) {
         free(key);
         free(token);
         token = nextToken(input);
+        if (token == NULL) return NULL;
         
 
         if (token->type == TOKEN_RIGHT_BRACE) {
@@ -799,6 +888,7 @@ Json * parseObject(char **input) {
             return json_obj;
         } else if (token->type != TOKEN_COMMA || token->type == TOKEN_EOF) {
             free(token);
+            errno = JSON_ERR_INV_JSON_STR;
             return NULL;
         }
         free(token);
@@ -851,6 +941,7 @@ Json * parseArray(char **input) {
 
         free(token);
         token = nextToken(input);
+        if (token == NULL) return NULL;
 
         if (token->type == TOKEN_RIGHT_BRACKET) {
             free(token);

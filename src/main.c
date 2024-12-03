@@ -24,7 +24,7 @@ int main(void) {
     printf("%s\n", json_string);
     
     Json *teste = jsonParse(
-      "{\n"
+    "{\n"
       "\"ola\": [\n"
         "13,\n"
         "true\n"

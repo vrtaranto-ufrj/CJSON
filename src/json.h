@@ -11,43 +11,56 @@ typedef struct JsonObjectStruct JsonObject;
 typedef struct JsonArrayStruct JsonArray;
 
 typedef enum JsonTypesEnum JsonTypes;
+typedef enum JsonErrorsEnum JsonErrors;
 
 typedef union JsonUnionUnion JsonUnion;
 
 typedef JsonValue Json;
 
+// @errno JSON_ERR_NULL, JSON_ERR_ALLOC, JSON_ERR_INV_TYPE
 Json * createJson(JsonTypes type, void * value);
+// @errno JSON_ERR_ALLOC
 JsonObject * createJsonObject();
+// @errno JSON_ERR_ALLOC
 JsonArray * createJsonArray(size_t array_size);
 void changeJsonArraySize(JsonArray *json_array, size_t array_size);
 
-void setJsonValueType(Json *json, JsonTypes type, void * value);
+int setJsonValueType(Json *json, JsonTypes type, void * value);
 
 void freeJson(Json *json);
 void freeJsonObject(JsonObject *json_object);
 void freeJsonArray(JsonArray *json_array);
 
+// @errno JSON_ERR_NULL
 int64_t * getInt(JsonObject *json_obj, const char *key);
+// @errno JSON_ERR_NULL
 double * getDouble(JsonObject *json_obj, const char *key);
+// @errno JSON_ERR_NULL
 bool * getBool(JsonObject *json_obj, const char *key);
+// @errno JSON_ERR_NULL
 char * getString(JsonObject *json_obj, const char *key);
+// @errno JSON_ERR_NULL
 JsonObject * getObject(JsonObject *json_obj, const char *key);
+// @errno JSON_ERR_NULL
 JsonArray * getArray(JsonObject *json_obj, const char *key);
 
 Json * getArrayValue(JsonArray *json_array, size_t index);
 
+// @errno JSON_ERR_NULL, JSON_ERR_ALLOC, JSON_ERR_INV_TYPE, JSON_ERR_INV_NUM
 char * jsonStringify(Json *json);
 
-void setKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
-void setArrayValue(JsonArray *json_array, size_t index, Json *value);
+// @errno JSON_ERR_NULL, JSON_ERR_ALLOC
+int setKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
+// @errno JSON_ERR_NULL, JSON_ERR_OUT_BONDS
+int setArrayValue(JsonArray *json_array, size_t index, Json *value);
 
-void setNull(Json *json);
-void setInt(Json *json, int64_t val_int);
-void setDouble(Json *json, double val_double);
-void setBool(Json *json, bool val_bool);
-void setString(Json *json, char * val_string);
-void setObject(Json *json, JsonObject *obj_ptr);
-void setArray(Json *json, JsonArray *array_ptr);
+int setNull(Json *json);
+int setInt(Json *json, int64_t val_int);
+int setDouble(Json *json, double val_double);
+int setBool(Json *json, bool val_bool);
+int setString(Json *json, char * val_string);
+int setObject(Json *json, JsonObject *obj_ptr);
+int setArray(Json *json, JsonArray *array_ptr);
 
 
 enum JsonTypesEnum {
@@ -58,6 +71,15 @@ enum JsonTypesEnum {
     JSON_STRING,
     JSON_OBJECT,
     JSON_ARRAY
+};
+
+enum JsonErrorsEnum {
+    JSON_ERR_ALLOC = 1,
+    JSON_ERR_NULL,
+    JSON_ERR_INV_TYPE,
+    JSON_ERR_OUT_BONDS,
+    JSON_ERR_INV_NUM,
+    JSON_ERR_INV_JSON_STR
 };
 
 union JsonUnionUnion {
@@ -110,8 +132,7 @@ enum TokenTypeEnum {
     TOKEN_TRUE,
     TOKEN_FALSE,
     TOKEN_NULL,
-    TOKEN_EOF,
-    TOKEN_ERROR
+    TOKEN_EOF
 } ;
 
 struct TokenStruct {
@@ -119,4 +140,5 @@ struct TokenStruct {
     char *value; // Usado apenas para strings e números
 };
 
+// @errno JSON_ERR_ALLOC, JSON_ERR_NULL, JSON_ERR_INV_JSON_STR
 Json *jsonParse(char *json_string);
