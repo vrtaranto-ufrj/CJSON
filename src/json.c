@@ -2,7 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "jsonv2.h"
+#include "json.h"
 
 char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len);
 char * jsonfyNull(Json *json, char *json_string, size_t *string_len);
@@ -12,6 +12,11 @@ char * jsonfyBool(Json *json, char *json_string, size_t *string_len);
 char * jsonfyString(Json *json, char *json_string, size_t *string_len);
 char * jsonfyObject(Json *json, char *json_string, size_t *string_len);
 char * jsonfyArray(Json *json, char *json_string, size_t *string_len);
+
+void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
+
+JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key);  
+
 
 
 Json * createJson(JsonTypes type, void * value) {
@@ -177,6 +182,16 @@ JsonArray * getArray(JsonObject *json_obj, const char *key) {
     if (json_value == NULL || json_value->value->type != JSON_ARRAY) return NULL;
     return json_value->value->value.array_ptr;
 }
+
+Json * getArrayValue(JsonArray *json_array, size_t index) {
+    if (index >= json_array->array_size) {
+        fprintf(stderr, "Index of array out of bounds\n");
+        return NULL;
+    }
+
+    return json_array->array[index];
+}
+
 
 char * jsonStringify(Json *json) {
     size_t string_len = 1;
@@ -498,26 +513,26 @@ void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value) {
     }
 }
 
-void setNull(JsonValue *json) {
+void setNull(Json *json) {
     memset(json, 0, sizeof(JsonValue));
 }
 
-void setInt(JsonValue *json, int64_t val_int) {
+void setInt(Json *json, int64_t val_int) {
     json->type = JSON_INT;
     json->value.val_int = val_int;
 }
 
-void setDouble(JsonValue *json, double val_double) {
+void setDouble(Json *json, double val_double) {
     json->type = JSON_DOUBLE;
     json->value.val_double = val_double;
 }
 
-void setBool(JsonValue *json, bool val_bool) {
+void setBool(Json *json, bool val_bool) {
     json->type = JSON_BOOL;
     json->value.val_bool = val_bool;
 }
 
-void setString(JsonValue *json, char * val_string) {
+void setString(Json *json, char * val_string) {
     size_t string_len = strlen(val_string) + 1;
 
     json->value.val_string = (char *) malloc(string_len);
@@ -531,12 +546,12 @@ void setString(JsonValue *json, char * val_string) {
     json->type = JSON_STRING;
 }
 
-void setObject(JsonValue *json, JsonObject *obj_ptr) {
+void setObject(Json *json, JsonObject *obj_ptr) {
     json->type = JSON_OBJECT;
     json->value.object_ptr = obj_ptr;
 }
 
-void setArray(JsonValue *json, JsonArray *array_ptr) {
+void setArray(Json *json, JsonArray *array_ptr) {
     json->type = JSON_ARRAY;
     json->value.array_ptr = array_ptr;
 }

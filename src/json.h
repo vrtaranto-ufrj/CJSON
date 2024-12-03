@@ -34,21 +34,20 @@ char * getString(JsonObject *json_obj, const char *key);
 JsonObject * getObject(JsonObject *json_obj, const char *key);
 JsonArray * getArray(JsonObject *json_obj, const char *key);
 
+Json * getArrayValue(JsonArray *json_array, size_t index);
+
 char * jsonStringify(Json *json);
 
-JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key);  
 void setKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
 void setArrayValue(JsonArray *json_array, size_t index, Json *value);
 
-void addKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
-
-void setNull(JsonValue *json);
-void setInt(JsonValue *json, int64_t val_int);
-void setDouble(JsonValue *json, double val_double);
-void setBool(JsonValue *json, bool val_bool);
-void setString(JsonValue *json, char * val_string);
-void setObject(JsonValue *json, JsonObject *obj_ptr);
-void setArray(JsonValue *json, JsonArray *array_ptr);
+void setNull(Json *json);
+void setInt(Json *json, int64_t val_int);
+void setDouble(Json *json, double val_double);
+void setBool(Json *json, bool val_bool);
+void setString(Json *json, char * val_string);
+void setObject(Json *json, JsonObject *obj_ptr);
+void setArray(Json *json, JsonArray *array_ptr);
 
 
 enum JsonTypesEnum {
