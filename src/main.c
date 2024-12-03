@@ -1,16 +1,14 @@
 #include <stdio.h>
 
 #include "jsonv2.h"
-#include "jsonv2aux.h"
-#include "jsonparser.h"
 
 
 int main(void) {
     Json *json = createJson(JSON_OBJECT, createJsonObject());
     
 
-    setKeyValuePair(json->value.object_ptr, "oi", createJson(JSON_STRING, "Ola"));
     setKeyValuePair(json->value.object_ptr, "ola", createJson(JSON_ARRAY, createJsonArray(2)));
+    setKeyValuePair(json->value.object_ptr, "oi", createJson(JSON_STRING, "Ola"));
     
 
     int64_t a = 13;
@@ -25,14 +23,15 @@ int main(void) {
 
     printf("%s\n", json_string);
     
-    Json *teste = jsonParse("{\n"
-  "\"ola\": [\n"
-    "13,\n"
-    "true\n"
-  "],\n"
-  "\"oi\": \"Ola\"\n"
-"}\n"
-);
+    Json *teste = jsonParse(
+      "{\n"
+      "\"ola\": [\n"
+        "13,\n"
+        "true\n"
+      "],\n"
+      "\"oi\": \"Ola\"\n"
+    "}\n"
+    );
 
     free(json_string);
 
