@@ -48,21 +48,21 @@ JsonArray * getArray(JsonObject *json_obj, const char *key);
 ### Funções de manipulação de arrays JSON
 ```c
 void changeJsonArraySize(JsonArray *json_array, size_t array_size);
-void setArrayValue(JsonArray *json_array, size_t index, Json *value);
+int setArrayValue(JsonArray *json_array, size_t index, Json *value);
 Json * getArrayValue(JsonArray *json_array, size_t index);
 ```
 
 ### Funções de manipulação de JSON
 ```c
-void setJsonValueType(Json *json, JsonTypes type, void * value);
+int setJsonValueType(Json *json, JsonTypes type, void * value);
 
-void setNull(Json *json);
-void setInt(Json *json, int64_t val_int);
-void setDouble(Json *json, double val_double);
-void setBool(Json *json, bool val_bool);
-void setString(Json *json, char * val_string);
-void setObject(Json *json, JsonObject *obj_ptr);
-void setArray(Json *json, JsonArray *array_ptr);
+int setNull(Json *json);
+int setInt(Json *json, int64_t val_int);
+int setDouble(Json *json, double val_double);
+int setBool(Json *json, bool val_bool);
+int setString(Json *json, char * val_string);
+int setObject(Json *json, JsonObject *obj_ptr);
+int setArray(Json *json, JsonArray *array_ptr);
 ```
 
 ### Funções para liberar memória
@@ -74,3 +74,21 @@ void freeJsonArray(JsonArray *json_array);
 
 ## Exemplo de uso
 O código main.c em /src contém um exemplo de uso da biblioteca.
+
+## Códigos de erro
+Funções que retornam ponteiros quando retornam NULL, pode ser que setem o código do errno caso tenho acontecido alguma falha.
+Funções que retornam int quando retornam algo diferente de 0, o código do errno será setado.
+
+No .h, funções que retornam erros, ou seja, seta valores de errno, possuem um comentário dizendo quais os possiveis erros que podem ocorrem.
+
+### Códigos de erros
+```c
+enum JsonErrorsEnum {
+    JSON_ERR_ALLOC = 1,
+    JSON_ERR_NULL,
+    JSON_ERR_INV_TYPE,
+    JSON_ERR_OUT_BONDS,
+    JSON_ERR_INV_NUM,
+    JSON_ERR_INV_JSON_STR
+};
+```
