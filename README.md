@@ -76,10 +76,10 @@ void freeJsonArray(JsonArray *json_array);
 O código main.c em /src contém um exemplo de uso da biblioteca.
 
 ## Códigos de erro
-Funções que retornam ponteiros quando retornam NULL, pode ser que setem o código do errno caso tenho acontecido alguma falha.
-Funções que retornam int quando retornam algo diferente de 0, o código do errno será setado.
+Funções que retornam ponteiros, quando retornam NULL, podem setar o errno com o código do erro ocorrido caso tenho acontecido alguma falha.
+Funções que retornam int, quando retornam algo diferente de 0, o código do errno será setado.
 
-No .h, funções que retornam erros, ou seja, seta valores de errno, possuem um comentário dizendo quais os possiveis erros que podem ocorrem.
+No .h, funções que retornam erros, ou seja, setam valores de errno, possuem um comentário dizendo quais os possiveis erros que podem ocorrem.
 
 ### Códigos de erros
 ```c
