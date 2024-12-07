@@ -4,6 +4,27 @@ Biblioteca em C implementando JSON
 ## Como usar a biblioteca
 Para usar a biblioteca, basta incluir o arquivo `json.h` no seu código e compilar o arquivo `json.c` junto com o seu código.
 
+## Cmake
+Para gerar o arquivo de build, basta rodar os seguintes comandos:
+```bash
+mkdir build
+cd build
+cmake ..
+```
+
+Para compilar o código, você deve estar na pasta raiz do projeto e rodar os seguinte comandos:
+- Para compilar o exemplo de uso:
+```bash
+cmake --build build --target example
+```
+
+- Para compilar os testes:
+```bash
+cmake --build build --target test
+```
+
+O output dos arquivos compilados estarão na pasta `build/bin`
+
 ## Funções disponíveis
 
 ### Funções de criação
@@ -73,7 +94,7 @@ void freeJsonArray(JsonArray *json_array);
 ```
 
 ## Exemplo de uso
-O código main.c em /src contém um exemplo de uso da biblioteca.
+O código example.c em /src contém um exemplo de uso da biblioteca.
 
 ## Códigos de erro
 Funções que retornam ponteiros, quando retornam NULL, podem setar o errno com o código do erro ocorrido caso tenho acontecido alguma falha.

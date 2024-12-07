@@ -126,7 +126,6 @@ bool testcreateJsonFunctionNull() {
     bool worked = true;
 
     Json *json = createJson(JSON_NULL, NULL);
-    int erro = errno;
     if (json->type != JSON_NULL || json->value.val_int != 0) {
         worked = false;
     }
@@ -252,8 +251,6 @@ bool testJsonStringifyFunction() {
     bool b = true;
     setArrayValue(getArray(json->value.object_ptr, "ola"), 1, createJson(JSON_BOOL, &b));
 
-    const char *i = getString(json->value.object_ptr, "oi");
-
     char *json_string = jsonStringify(json);
 
     char expected[] = "{\"ola\":[13,true],\"oi\":\"Ola\"}";
@@ -291,8 +288,6 @@ bool testJsonParseFunction() {
 
     bool b = true;
     setArrayValue(getArray(json->value.object_ptr, "ola"), 1, createJson(JSON_BOOL, &b));
-
-    const char *i = getString(json->value.object_ptr, "oi");
 
     if (strcmp(getString(json->value.object_ptr, "oi"), getString(teste->value.object_ptr, "oi")) != 0) return false;
     

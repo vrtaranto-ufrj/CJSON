@@ -17,8 +17,6 @@ int main(void) {
     bool b = true;
     setArrayValue(getArray(json->value.object_ptr, "ola"), 1, createJson(JSON_BOOL, &b));
 
-    const char *i = getString(json->value.object_ptr, "oi");
-
     char *json_string = jsonStringify(json);
 
     printf("%s\n", json_string);
