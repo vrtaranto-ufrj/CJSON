@@ -43,7 +43,7 @@ char * getString(JsonObject *json_obj, const char *key);
 JsonObject * getObject(JsonObject *json_obj, const char *key);
 // @errno JSON_ERR_NULL
 JsonArray * getArray(JsonObject *json_obj, const char *key);
-
+// @errno JSON_ERR_NULL JSON_ERR_OUT_BONDS
 Json * getArrayValue(JsonArray *json_array, size_t index);
 
 // @errno JSON_ERR_NULL, JSON_ERR_ALLOC, JSON_ERR_INV_TYPE, JSON_ERR_INV_NUM

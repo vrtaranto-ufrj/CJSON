@@ -22,7 +22,7 @@ JsonKeyValuePair * findKeyValuePair(JsonObject *json_obj, const char *key);
 
 
 Json * createJson(JsonTypes type, void * value) {
-    if (value == NULL) {
+    if (value == NULL && type != JSON_NULL) {
         errno = JSON_ERR_NULL;
         return NULL;
     }
@@ -68,11 +68,14 @@ JsonArray * createJsonArray(size_t array_size) {
 }
 
 void changeJsonArraySize(JsonArray *json_array, size_t array_size) {
-    json_array->array = (JsonValue **) realloc(json_array->array, sizeof(JsonValue) * array_size);
+    json_array->array = (JsonValue **) realloc(json_array->array, sizeof(JsonValue*) * array_size);
     if (json_array->array == NULL) {
         perror("realloc");
         fprintf(stderr, "Failed to realloc JsonArray\n");
         return;
+    }
+    if (array_size > json_array->array_size) {
+        memset(&(json_array->array[json_array->array_size]), 0, (array_size - json_array->array_size) * sizeof(JsonValue*));
     }
 
     json_array->array_size = array_size;
@@ -222,8 +225,12 @@ JsonArray * getArray(JsonObject *json_obj, const char *key) {
 }
 
 Json * getArrayValue(JsonArray *json_array, size_t index) {
+    if (json_array == NULL || json_array->array == NULL) {
+        errno = JSON_ERR_NULL;
+        return NULL;
+    }
     if (index >= json_array->array_size) {
-        fprintf(stderr, "Index of array out of bounds\n");
+        errno = JSON_ERR_OUT_BONDS;
         return NULL;
     }
 
@@ -792,22 +799,24 @@ Json * parseNull(Token *token) {
 Json * parseInt(Token *token) {
     char *endptr;
     int64_t val_int = strtoll(token->value, &endptr, NUM_BASE);
-    free(token->value);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
+        free(token->value);
         errno = JSON_ERR_INV_NUM;
         return NULL;
     }
+    free(token->value);
     return createJson(JSON_INT, &val_int);
 }
 
 Json * parseDouble(Token *token) {
     char *endptr;
     double val_double = strtod(token->value, &endptr);
-    free(token->value);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
+        free(token->value);
         errno = JSON_ERR_INV_NUM;
         return NULL;
     }
+    free(token->value);
     return createJson(JSON_DOUBLE, &val_double);
 }
 
