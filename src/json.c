@@ -6,6 +6,8 @@
 #include "json.h"
 
 #define NUM_BASE 10
+#define INITIAL_CAPACITY 1024
+#define INITIAL_ARRAY_SIZE 32
 
 char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
 char * jsonfyNull(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
@@ -245,7 +247,7 @@ char * jsonStringify(Json *json) {
     }
 
     size_t string_len = 1;
-    size_t string_capacity = 1024;
+    size_t string_capacity = INITIAL_CAPACITY;
 
     char *json_string = (char *) calloc(string_capacity, sizeof(char));
     if (json_string == NULL) {
@@ -253,7 +255,17 @@ char * jsonStringify(Json *json) {
         return NULL;
     }
 
-    return jsonfyRecursive(json, json_string, &string_len, &string_capacity);
+    json_string = jsonfyRecursive(json, json_string, &string_len, &string_capacity);
+
+    // Shrink to fit
+    char * shrinked_json_string = (char *) realloc(json_string, string_len * sizeof(char));
+    if (shrinked_json_string == NULL) {
+        errno = JSON_ERR_ALLOC;
+        return NULL;
+    }
+    json_string = shrinked_json_string;
+    
+    return json_string;
 }
 
 char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
@@ -944,7 +956,7 @@ Json * parseObject(char **input) {
 }
 
 Json * parseArray(char **input) {
-    JsonArray *array = createJsonArray(16);
+    JsonArray *array = createJsonArray(INITIAL_ARRAY_SIZE);
     Json *json_array = createJson(JSON_ARRAY, array);
     Json *json_value;
     size_t index = 0;
