@@ -7,14 +7,14 @@
 
 #define NUM_BASE 10
 
-char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len);
-char * jsonfyNull(Json *json, char *json_string, size_t *string_len);
-char * jsonfyInt(Json *json, char *json_string, size_t *string_len);
-char * jsonfyDouble(Json *json, char *json_string, size_t *string_len);
-char * jsonfyBool(Json *json, char *json_string, size_t *string_len);
-char * jsonfyString(Json *json, char *json_string, size_t *string_len);
-char * jsonfyObject(Json *json, char *json_string, size_t *string_len);
-char * jsonfyArray(Json *json, char *json_string, size_t *string_len);
+char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyNull(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyInt(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyDouble(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyBool(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyString(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyObject(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
+char * jsonfyArray(Json *json, char *json_string, size_t *string_len, size_t *string_capacity);
 
 int addKeyValuePair(JsonObject *json_obj, const char *key, Json *value);
 
@@ -245,32 +245,33 @@ char * jsonStringify(Json *json) {
     }
 
     size_t string_len = 1;
+    size_t string_capacity = 1024;
 
-    char *json_string = (char *) calloc(string_len, sizeof(char));
+    char *json_string = (char *) calloc(string_capacity, sizeof(char));
     if (json_string == NULL) {
         errno = JSON_ERR_ALLOC;
         return NULL;
     }
 
-    return jsonfyRecursive(json, json_string, &string_len);
+    return jsonfyRecursive(json, json_string, &string_len, &string_capacity);
 }
 
-char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     switch (json->type) {
     case JSON_NULL:
-        return jsonfyNull(json, json_string, string_len);
+        return jsonfyNull(json, json_string, string_len, string_capacity);
     case JSON_INT:
-        return jsonfyInt(json, json_string, string_len);
+        return jsonfyInt(json, json_string, string_len, string_capacity);
     case JSON_DOUBLE:
-        return jsonfyDouble(json, json_string, string_len);
+        return jsonfyDouble(json, json_string, string_len, string_capacity);
     case JSON_BOOL:
-        return jsonfyBool(json, json_string, string_len);
+        return jsonfyBool(json, json_string, string_len, string_capacity);
     case JSON_STRING:
-        return jsonfyString(json, json_string, string_len);
+        return jsonfyString(json, json_string, string_len, string_capacity);
     case JSON_OBJECT:
-        return jsonfyObject(json, json_string, string_len);
+        return jsonfyObject(json, json_string, string_len, string_capacity);
     case JSON_ARRAY:
-        return jsonfyArray(json, json_string, string_len);
+        return jsonfyArray(json, json_string, string_len, string_capacity);
     default:
         errno = JSON_ERR_INV_TYPE;
     }
@@ -278,26 +279,29 @@ char * jsonfyRecursive(Json *json, char *json_string, size_t *string_len) {
     return NULL;
 }
 
-char * jsonfyNull(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyNull(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     size_t null_size = sizeof("null") - 1;
 
     *string_len += null_size;
     
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
-    }
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
 
-    json_string = new_json_string;
+        json_string = new_json_string;
+    }
 
     strcat(json_string, "null");
 
     return json_string;
 }
 
-char * jsonfyInt(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyInt(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     char num[20];
     int num_len = snprintf(num, sizeof(num), "%" PRId64, json->value.val_int);
 
@@ -309,21 +313,25 @@ char * jsonfyInt(Json *json, char *json_string, size_t *string_len) {
     
     *string_len += (size_t) num_len;
 
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
-    }
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
 
-    json_string = new_json_string;
+        json_string = new_json_string;
+    }
+    
 
     strcat(json_string, num);
 
     return json_string;
 }
 
-char * jsonfyDouble(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyDouble(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     char num[350];
     int num_len = snprintf(num, sizeof(num), "%f", json->value.val_double);
 
@@ -335,54 +343,66 @@ char * jsonfyDouble(Json *json, char *json_string, size_t *string_len) {
     
     *string_len += (size_t) num_len;
 
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
-    }
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
 
-    json_string = new_json_string;
+        json_string = new_json_string;
+    }
+    
 
     strcat(json_string, num);
 
     return json_string;
 }
 
-char * jsonfyBool(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyBool(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     const char *bool_string = json->value.val_bool ? "true" : "false";
     size_t bool_size = (json->value.val_bool ? sizeof("true") : sizeof("false")) - 1;
 
     *string_len += bool_size;
     
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        errno = JSON_ERR_ALLOC;
-        free(json_string);
-        return NULL;
-    }
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            errno = JSON_ERR_ALLOC;
+            free(json_string);
+            return NULL;
+        }
 
-    json_string = new_json_string;
+        json_string = new_json_string;
+    }
+    
 
     strcat(json_string, bool_string);
 
     return json_string;
 }
 
-char * jsonfyString(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyString(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     size_t val_string_len = strlen(json->value.val_string) + 2;
 
     *string_len += val_string_len;
+
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
+
+        json_string = new_json_string;
+    }    
     
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
-    }
-
-    json_string = new_json_string;
-
+    
     strcat(json_string, "\"");
     strcat(json_string, json->value.val_string);
     strcat(json_string, "\"");
@@ -390,17 +410,20 @@ char * jsonfyString(Json *json, char *json_string, size_t *string_len) {
     return json_string;
 }
 
-char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyObject(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     *string_len += 2;
     
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
-    }
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
 
-    json_string = new_json_string;
+        json_string = new_json_string;
+    }
 
     strcat(json_string, "{");
 
@@ -409,28 +432,9 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
 
         *string_len += key_len + 3;
 
-        new_json_string = (char *) realloc(json_string, *string_len);
-        if (new_json_string == NULL) {
-            free(json_string);
-            errno = JSON_ERR_ALLOC;
-            return NULL;
-        }
-
-        json_string = new_json_string;
-
-        strcat(json_string, "\"");
-        strcat(json_string, key_value_pair->key);
-        strcat(json_string, "\":");
-
-        json_string = jsonfyRecursive(key_value_pair->value, json_string, string_len);
-        if (json_string == NULL) {
-            return NULL;
-        }
-
-        if (key_value_pair->next != NULL) {
-            *string_len += 1;
-
-            new_json_string = (char *) realloc(json_string, *string_len);
+        if (*string_len >= *string_capacity) {
+            *string_capacity *= 2;
+            char *new_json_string = (char *) realloc(json_string, *string_capacity);
             if (new_json_string == NULL) {
                 free(json_string);
                 errno = JSON_ERR_ALLOC;
@@ -438,6 +442,33 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
             }
 
             json_string = new_json_string;
+        }
+        
+
+        strcat(json_string, "\"");
+        strcat(json_string, key_value_pair->key);
+        strcat(json_string, "\":");
+
+        json_string = jsonfyRecursive(key_value_pair->value, json_string, string_len, string_capacity);
+        if (json_string == NULL) {
+            return NULL;
+        }
+
+        if (key_value_pair->next != NULL) {
+            *string_len += 1;
+
+            if (*string_len >= *string_capacity) {
+                *string_capacity *= 2;
+                char *new_json_string = (char *) realloc(json_string, *string_capacity);
+                if (new_json_string == NULL) {
+                    free(json_string);
+                    errno = JSON_ERR_ALLOC;
+                    return NULL;
+                }
+
+                json_string = new_json_string;
+            }
+            
 
             strcat(json_string, ",");
         }
@@ -448,18 +479,21 @@ char * jsonfyObject(Json *json, char *json_string, size_t *string_len) {
     return json_string;
 }
 
-char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
+char * jsonfyArray(Json *json, char *json_string, size_t *string_len, size_t *string_capacity) {
     *string_len += 2;
 
-    char *new_json_string = (char *) realloc(json_string, *string_len);
-    if (new_json_string == NULL) {
-        free(json_string);
-        errno = JSON_ERR_ALLOC;
-        return NULL;
+    if (*string_len >= *string_capacity) {
+        *string_capacity *= 2;
+        char *new_json_string = (char *) realloc(json_string, *string_capacity);
+        if (new_json_string == NULL) {
+            free(json_string);
+            errno = JSON_ERR_ALLOC;
+            return NULL;
+        }
+
+        json_string = new_json_string;
     }
-
-    json_string = new_json_string;
-
+    
     strcat(json_string, "[");
 
     size_t num_valid_elements = 0;
@@ -471,7 +505,7 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
         if (json->value.array_ptr->array[i] == NULL) continue;
         num_valid_elements--;
 
-        json_string = jsonfyRecursive(json->value.array_ptr->array[i], json_string, string_len);
+        json_string = jsonfyRecursive(json->value.array_ptr->array[i], json_string, string_len, string_capacity);
         if (json_string == NULL) {
             return NULL;
         }
@@ -479,15 +513,18 @@ char * jsonfyArray(Json *json, char *json_string, size_t *string_len) {
         if (num_valid_elements) {
             *string_len += 1;
 
-            new_json_string = (char *) realloc(json_string, *string_len);
-            if (new_json_string == NULL) {
-                free(json_string);
-                errno = JSON_ERR_ALLOC;
-                return NULL;
+            if (*string_len >= *string_capacity) {
+                *string_capacity *= 2;
+                char *new_json_string = (char *) realloc(json_string, *string_capacity);
+                if (new_json_string == NULL) {
+                    free(json_string);
+                    errno = JSON_ERR_ALLOC;
+                    return NULL;
+                }
+
+                json_string = new_json_string;
             }
-
-            json_string = new_json_string;
-
+            
             strcat(json_string, ",");
         }
     }
